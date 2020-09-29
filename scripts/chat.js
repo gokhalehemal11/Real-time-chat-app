@@ -36,56 +36,6 @@ logout.addEventListener('click', (e) => {
   });
 });
 
-/*
-// Store 1-1 chat in the database
-const chatform = document.querySelector('#chat');
-chatform.addEventListener('submit', (e) => {
-  e.preventDefault();
-  
-  // get user info
-  const to = chatform['to'].value;      // recipient email
-  const msg = chatform['message'].value;  // message text
-  const doc_name= to > auth.currentUser.email ? auth.currentUser.email+"_"+to : to+"_"+auth.currentUser.email;  
-  // document name of the 1-1 chat 
-  console.log(to,msg,doc_name);
-   db.collection('messages').doc(doc_name).collection('chat').add({ 
-   //This function will generate/update document name of the 1-1 chat
-    sender: auth.currentUser.email,
-    msg: msg,
-    timestamp: firebase.firestore.FieldValue.serverTimestamp() // store message with timestamp in database
-  }).then(function(){
-      db.collection('users').doc(auth.currentUser.email).collection('recent_chats').doc(doc_name).set({
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()    
-      // Add chat name to collection of recent_chats current user recent_chats
-    });
-  }).then(function(){
-    db.collection('users').doc(to).collection('recent_chats').doc(doc_name).set({
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()  
-      // Add chat name to collection of recent_chats recipient recent_chats
-    });
-  })
-  .catch(function(error) {
-    console.error('Error writing new message to database', error);
-  });
-});
-
-// Store group chat in database
-const groupChat = document.querySelector('#groupchat');
-groupChat.addEventListener('submit', (e) => {
-  e.preventDefault();
-  
-  // get user info
-  const msg = groupChat['groupmessage'].value;
-  const doc_name= groupChat['groupname'].value;
-   db.collection('groups').doc(doc_name).collection('chat').add({
-    sender: auth.currentUser.email,
-    msg: msg,
-    timestamp: firebase.firestore.FieldValue.serverTimestamp()
-  }).catch(function(error) {
-    console.error('Error writing new message to database', error);
-  });
-});*/
-
 // Listen for real time updates
 function ListenForUpdates() {
   var chat_sidebar = document.querySelector("#chat-sidebar");
@@ -282,39 +232,40 @@ function LoadMessages() {
   if (chat_content.innerHTML === "" || !(all_chat_msgs.includes(chat_content.innerHTML))) {
     query.onSnapshot(snapshot => {
       for (const change of snapshot.docChanges()) {
-        var data = change.doc.data();
-        var current = '';
-        var msg_time = data.timestamp ? moment(data.timestamp.toDate()).format("MMM D, h:mm a") : moment(new Date()).format("MMM D, h:mm a");
-        if (data.sender === cur_email) {
-          const current = '<div class="chat">' +
-            '<div class="chat-user">' +
-            '<a class="avatar m-0">' +
-            '<img src="' + cur_photo + '" alt="avatar" class="avatar-35 ">' +
-            '</a>' +
-            '<span class="chat-time mt-1">' + msg_time + '</span>' +
-            '</div>' +
-            '<div class="chat-detail">' +
-            '<div class="chat-message">' +
-            '<p class="msg-text">' + data.msg + '</p>' +
-            '</div>' +
-            '</div>' +
-            '</div>';
-          text = text + current;
-        } else {
-          const current = '<div class="chat chat-left">' +
-            '<div class="chat-user">' +
-            '<a class="avatar m-0">' +
-            '<img src="' + chat_photo + '" alt="avatar" class="avatar-35 ">' +
-            '</a>' +
-            '<span class="chat-time mt-1">' + msg_time + '</span>' +
-            '</div>' +
-            '<div class="chat-detail">' +
-            '<div class="chat-message">' +
-            '<p class="msg-text">' + data.msg + '</p>' +
-            '</div>' +
-            '</div>' +
-            '</div>';
-          text = text + current;
+        if(change.type === "added"){
+          var data = change.doc.data();
+          var msg_time = data.timestamp ? moment(data.timestamp.toDate()).format("MMM D, h:mm a") : moment(new Date()).format("MMM D, h:mm a");
+          if (data.sender == cur_email) {
+            const current = '<div class="chat" id="'+change.doc.id+'">' +
+              '<div class="chat-user">' +
+              '<a class="avatar m-0">' +
+              '<img src="' + cur_photo + '" alt="avatar" class="avatar-35 ">' +
+              '</a>' +
+              '<span class="chat-time mt-1">' + msg_time + '</span>' +
+              '</div>' +
+              '<div class="chat-detail">' +
+              '<div class="chat-message">' +
+              '<p class="msg-text">' + data.msg + '</p>' +
+              '</div>' +
+              '</div>' +
+              '</div>';
+            text = text + current;
+          } else {
+            const current = '<div class="chat chat-left" id="'+change.doc.id+'">' +
+              '<div class="chat-user">' +
+              '<a class="avatar m-0">' +
+              '<img src="' + chat_photo + '" alt="avatar" class="avatar-35 ">' +
+              '</a>' +
+              '<span class="chat-time mt-1">' + msg_time + '</span>' +
+              '</div>' +
+              '<div class="chat-detail">' +
+              '<div class="chat-message">' +
+              '<p class="msg-text">' + data.msg + '</p>' +
+              '</div>' +
+              '</div>' +
+              '</div>';
+            text = text + current;
+          }
         }
       }
       chat_content.innerHTML = text;
@@ -331,7 +282,6 @@ function SendMessage(e) {
   const doc_name = this['chat_id'].value;
   //console.log(to,msg,doc_name);
   db.collection('messages').doc(doc_name).collection('conversation').add({
-      //This function will generate/update document name of the 1-1 chat
       sender: cur_email,
       msg: msg,
       timestamp: firebase.firestore.FieldValue.serverTimestamp()
@@ -350,32 +300,3 @@ function SendMessage(e) {
     });
   this.reset();
 }
-
-/*var chat_form= document.querySelector('#chat_form3');
-chat_form.addEventListener('submit', (e) => {
-  e.preventDefault();
-  const msg = chat_form['message'].value;
-  const to = chat_form['to'].value;      // recipient email
-  const doc_name= to > auth.currentUser.email ? auth.currentUser.email+"_"+to : to+"_"+auth.currentUser.email;  
-  // document name of the 1-1 chat 
-  console.log(to,msg,doc_name);
-   db.collection('messages').doc(doc_name).collection('chat').add({ 
-   //This function will generate/update document name of the 1-1 chat
-    sender: auth.currentUser.email,
-    msg: msg,
-    timestamp: firebase.firestore.FieldValue.serverTimestamp() // store message with timestamp in database
-  }).then(function(){
-      db.collection('users').doc(auth.currentUser.email).collection('recent_chats').doc(doc_name).set({
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()    
-      // Add chat name to collection of recent_chats current user recent_chats
-    });
-  }).then(function(){
-    db.collection('users').doc(to).collection('recent_chats').doc(doc_name).set({
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()  
-      // Add chat name to collection of recent_chats recipient recent_chats
-    });
-  })
-  .catch(function(error) {
-    console.error('Error writing new message to database', error);
-  });
-});*/
