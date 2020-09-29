@@ -1,6 +1,3 @@
-# Real-time-chat-app
-Real time chat app on web using Cloud Firestore. 
-
 MIT License
 
 Copyright (c) 2020 Hemal Gokhale
