@@ -34,7 +34,7 @@ function UpdateStatus(docname){
   db.collection('users').doc(docname).update({
     status: true,
   }).then(function(){
-    window.location.replace("ui-chat.html");
+    window.location.replace("index.html");
   }).catch(function(error) {
     console.error('Error writing to database', error);
   });
