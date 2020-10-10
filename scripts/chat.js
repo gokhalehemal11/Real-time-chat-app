@@ -4,6 +4,7 @@ var cur_photo = "";
 var total_chats = 0;
 var all_chat_msgs = [];
 var recent_chats= [];
+var reads= 0;
 
 // Detect the change of user authentication state. Whether user is logged in or logged out
 auth.onAuthStateChanged(user => {
@@ -38,10 +39,6 @@ logout.addEventListener('click', (e) => {
 
 // Listen for real time updates
 function ListenForUpdates() {
-  var chat_sidebar = document.querySelector("#chat-sidebar");
-  var chat = document.querySelector(".tab-content");
-  var text = '';
-  var chat_content = '';
   // query to listen to real time updates in user recent_chats collection
   const query = db.collection('chats')
     .where('participants', 'array-contains', cur_email)
@@ -70,9 +67,10 @@ function ListenForUpdates() {
           chat_status = details[0].status;
         }
         recent_chats.push(chat_email);
-        AddDiv(id, chat_name, chat_photourl, data.last_message, chat_status, chat_email, data.last_updated);  // Recent Chats
+        var chat_time= data.last_updated ? data.last_updated.toDate() : new Date();
+        AddDiv(id, chat_name, chat_photourl, data.last_message, chat_status, chat_email, chat_time, true);  // Recent Chats
       } else if (change.type === "modified") {
-        RefreshDiv(change.doc.id, change.doc.data().last_message);
+        RefreshDiv(change.doc.id, change.doc.data().last_message, change.doc.data().last_updated);
       } else if (change.type === "removed") {
         RemoveDiv(change.doc.id);
       }
@@ -93,9 +91,10 @@ const GetDetails = async function (participants) {
   }
 }
 
-function AddDiv(id, name, photo, last_msg, status, email, chat_time) {
+function AddDiv(id, name, photo, last_msg, status, email, chat_time, recent) {
+
   var active = status ? "text-success" : "text-dark";
-  var chat_sidebar = document.querySelector("#chat-sidebar");
+  var chat_sidebar = recent ? document.querySelector("#chat-sidebar") : document.querySelector("#chat-sidebar-new");
   var chat = document.createElement("li");
   chat.setAttribute("id", id);
   const text = '<a role="tab" data-toggle="pill" href="#chatbox_' + id + '">' +
@@ -109,7 +108,7 @@ function AddDiv(id, name, photo, last_msg, status, email, chat_time) {
     '<span class="last_msg">' + last_msg.slice(0, 14) + '</span>' +
     '</div>' +
     '<div class="chat-meta float-right text-center mt-2">' +
-    '<span class="text-nowrap">' + moment(chat_time.toDate()).format("MMM D") + '</span>' +
+    '<span class="text-nowrap last_time">' + moment(chat_time).format("MMM D") + '</span>' +
     '</div>' +
     '</div>' +
     '</a>';
@@ -210,10 +209,11 @@ function AddDiv(id, name, photo, last_msg, status, email, chat_time) {
   chat_detail.appendChild(det);
 }
 
-function RefreshDiv(changed_div, last_msg) {
+function RefreshDiv(changed_div, last_msg, last_time) {
   var chat_sidebar = document.querySelector("#chat-sidebar");
   var chat = document.getElementById(changed_div);
   chat.querySelector(".last_msg").innerHTML = last_msg.slice(0, 14);
+  chat.querySelector(".last_time").innerHTML= moment(new Date()).format("MMM D");
   chat_sidebar.insertBefore(chat, chat_sidebar.childNodes[0]);
 }
 
@@ -267,6 +267,9 @@ function LoadMessages() {
             text = text + current;
           }
         }
+        else if(change.type === "removed"){
+          chat_content.removeChild(document.getElementById(change.doc.id));
+        }
       }
       chat_content.innerHTML = text;
       chat_content.scrollTop = chat_content.scrollHeight;
@@ -289,7 +292,8 @@ function SendMessage(e) {
     .then(function () {
       db.collection('chats').doc(doc_name).set({
         last_updated: firebase.firestore.FieldValue.serverTimestamp(),
-        last_message: msg
+        last_message: msg,
+        participants: [cur_email, to]
       }, {
         merge: true
       });
@@ -299,4 +303,33 @@ function SendMessage(e) {
       console.log(error);
     });
   this.reset();
+  if (document.querySelector("#chat-sidebar-new").contains(document.getElementById(doc_name))){
+    document.querySelector("#chat-sidebar-new").removeChild(document.getElementById(doc_name));
+  }
 }
+
+
+// New Chats
+setTimeout(function(){ 
+  const query= db.collection('users')
+                 .where(firebase.firestore.FieldPath.documentId(), 'not-in', recent_chats);
+  query.onSnapshot(snapshot=> {
+    for (const change of snapshot.docChanges()) {  
+      var chat_email= change.doc.id;
+      if (chat_email != cur_email){
+        var docid= cur_email > chat_email ?  cur_email+"_"+chat_email : chat_email+"_"+cur_email;
+        var hash= 0;
+        for (i = 0; i < docid.length; i++) {
+          char = docid.charCodeAt(i);
+          hash = ((hash<<5)-hash)+char;
+          hash = hash & hash; // Convert to 32bit integer
+      }
+        var data= change.doc.data();
+        var name= data.name;
+        var photo= data.photo ? data.photo : '/images/user/pp.png';
+        var status= data.status;
+        AddDiv(hash, name, photo, "Start chat", status, chat_email, new Date(), false);
+      }
+    }
+  });
+} , 8000);
