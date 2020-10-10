@@ -41,7 +41,7 @@ function AddUsertoDb(email,dispname) {
     name: dispname,
     status: true
   }).then(function(){
-    window.location.replace("ui-chat.html");
+    window.location.replace("index.html");
   }).catch(function(error) {
     console.error('Error writing to database', error);
   });
