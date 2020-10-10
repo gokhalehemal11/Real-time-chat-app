@@ -47,6 +47,9 @@ function ListenForUpdates() {
   query.onSnapshot(async snapshot => {
     for (const change of snapshot.docChanges()) {
       //console.log(change);
+      if (document.querySelector("#chat-sidebar-new").contains(document.getElementById(id))){
+          document.querySelector("#chat-sidebar-new").removeChild(document.getElementById(id));
+      }
       if (change.type === 'added') {
         const data = change.doc.data();
         const id = change.doc.id;
@@ -69,9 +72,6 @@ function ListenForUpdates() {
         recent_chats.push(chat_email);
         var chat_time= data.last_updated ? data.last_updated.toDate() : new Date();
         AddDiv(id, chat_name, chat_photourl, data.last_message, chat_status, chat_email, chat_time, true);  // Recent Chats
-        if (document.querySelector("#chat-sidebar-new").contains(document.getElementById(id))){
-          document.querySelector("#chat-sidebar-new").removeChild(document.getElementById(id));
-        }
       } else if (change.type === "modified") {
         RefreshDiv(change.doc.id, change.doc.data().last_message, change.doc.data().last_updated);
       } else if (change.type === "removed") {
