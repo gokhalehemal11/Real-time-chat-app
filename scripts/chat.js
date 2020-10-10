@@ -47,8 +47,8 @@ function ListenForUpdates() {
   query.onSnapshot(async snapshot => {
     for (const change of snapshot.docChanges()) {
       //console.log(change);
-      if (document.querySelector("#chat-sidebar-new").contains(document.getElementById(id))){
-          document.querySelector("#chat-sidebar-new").removeChild(document.getElementById(id));
+      if (document.querySelector("#chat-sidebar-new").contains(document.getElementById(change.doc.id))){
+          document.querySelector("#chat-sidebar-new").removeChild(document.getElementById(change.doc.id));
       }
       if (change.type === 'added') {
         const data = change.doc.data();
