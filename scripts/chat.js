@@ -48,7 +48,7 @@ function ListenForUpdates() {
     for (const change of snapshot.docChanges()) {
       //console.log(change);
       if (document.querySelector("#chat-sidebar-new").contains(document.getElementById(change.doc.id))){
-          document.querySelector("#chat-sidebar-new").removeChild(document.getElementById(change.doc.id));
+            document.querySelector("#chat-sidebar-new").removeChild(document.getElementById(change.doc.id));
       }
       if (change.type === 'added') {
         const data = change.doc.data();
@@ -79,6 +79,7 @@ function ListenForUpdates() {
       }
     }
   });
+  NewChats();
 }
 
 const GetDetails = async function (participants) {
@@ -310,26 +311,30 @@ function SendMessage(e) {
 
 
 // New Chats
-setTimeout(function(){ 
-  const query= db.collection('users')
-                 .where(firebase.firestore.FieldPath.documentId(), 'not-in', recent_chats);
-  query.onSnapshot(snapshot=> {
-    for (const change of snapshot.docChanges()) {  
-      var chat_email= change.doc.id;
-      if (chat_email != cur_email){
-        var docid= cur_email > chat_email ?  cur_email+"_"+chat_email : chat_email+"_"+cur_email;
-        var hash= 0;
-        for (i = 0; i < docid.length; i++) {
-          char = docid.charCodeAt(i);
-          hash = ((hash<<5)-hash)+char;
-          hash = hash & hash; // Convert to 32bit integer
+function NewChats(){
+  setTimeout(function(){ 
+    const query= recent_chats.length > 0 ?
+                   db.collection('users')
+                   .where(firebase.firestore.FieldPath.documentId(), 'not-in', recent_chats)
+                   : db.collection('users');
+    query.onSnapshot(snapshot=> {
+      for (const change of snapshot.docChanges()) {  
+        var chat_email= change.doc.id;
+        if (chat_email != cur_email){
+          var docid= cur_email > chat_email ?  cur_email+"_"+chat_email : chat_email+"_"+cur_email;
+          var hash= 0;
+          for (i = 0; i < docid.length; i++) {
+            char = docid.charCodeAt(i);
+            hash = ((hash<<5)-hash)+char;
+            hash = hash & hash; // Convert to 32bit integer
+        }
+          var data= change.doc.data();
+          var name= data.name;
+          var photo= data.photo ? data.photo : '/images/user/pp.png';
+          var status= data.status;
+          AddDiv(hash, name, photo, "Start chat", status, chat_email, new Date(), false);
+        }
       }
-        var data= change.doc.data();
-        var name= data.name;
-        var photo= data.photo ? data.photo : '/images/user/pp.png';
-        var status= data.status;
-        AddDiv(hash, name, photo, "Start chat", status, chat_email, new Date(), false);
-      }
-    }
-  });
-} , 8000);
+    });
+  } , 8000);
+}
